@@ -78,7 +78,7 @@ services:
     container_name: volume_backup
     restart: unless-stopped
     environment:
-      - BACKUP_CRON_EXPRESSION="${BACKUP_CRON:-0 2 * * *}"
+      - BACKUP_CRON_EXPRESSION=${BACKUP_CRON:-0 2 * * *}
       - BACKUP_FILENAME=iot-backup-%Y-%m-%dT%H-%M-%S.tar.gz
       - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
     volumes:
