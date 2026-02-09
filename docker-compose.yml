@@ -1,0 +1,97 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - "${MQTT_PORT:-1883}:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/passwordfile:/mosquitto/config/passwordfile:ro
+      - ./mosquitto/data:/mosquitto/data
+      - ./mosquitto/log:/mosquitto/log
+    networks: [iot_net]
+
+  zigbee2mqtt:
+    image: ghcr.io/koenkk/zigbee2mqtt:latest
+    container_name: zigbee2mqtt
+    restart: unless-stopped
+    depends_on: [mosquitto]
+    environment:
+      - TZ=${TZ:-America/Santiago}
+    volumes:
+      - ./zigbee2mqtt/data:/app/data
+      - /run/udev:/run/udev:ro
+    devices:
+      # Host by-id -> container /dev/ttyACM0 (recommended by docs)
+      - "${ZIGBEE_ADAPTER_HOST}:/dev/ttyACM0"
+    ports:
+      - "${Z2M_UI_PORT:-8084}:8084"
+    # For rootless (optional). If adapter access fails, enable:
+    # user: "${PUID}:${PGID}"
+    # group_add:
+    #   - dialout
+    networks: [iot_net]
+
+  nodered:
+    image: nodered/node-red:latest
+    container_name: nodered
+    restart: unless-stopped
+    depends_on: [mosquitto]
+    environment:
+      - TZ=${TZ:-America/Santiago}
+    ports:
+      - "${NODERED_PORT:-1880}:1880"
+    volumes:
+      - ./nodered/data:/data
+    networks: [iot_net]
+
+  postgres:
+    image: postgres:16
+    container_name: tb_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${TB_DB:-thingsboard}
+      - POSTGRES_USER=${TB_DB_USER:-tb}
+      - POSTGRES_PASSWORD=${TB_DB_PASS:-tbpass}
+      - TZ=${TZ:-America/Santiago}
+    volumes:
+      - tb_pgdata:/var/lib/postgresql/data
+    networks: [iot_net]
+
+  thingsboard:
+    image: thingsboard/tb-postgres:latest
+    container_name: thingsboard
+    restart: unless-stopped
+    depends_on: [postgres]
+    environment:
+      - TZ=${TZ:-America/Santiago}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${TB_DB:-thingsboard}
+      - SPRING_DATASOURCE_USERNAME=${TB_DB_USER:-tb}
+      - SPRING_DATASOURCE_PASSWORD=${TB_DB_PASS:-tbpass}
+    ports:
+      - "${TB_PORT:-8080}:9090"
+    networks: [iot_net]
+
+  backup:
+    image: offen/docker-volume-backup:latest
+    container_name: volume_backup
+    restart: unless-stopped
+    environment:
+      - BACKUP_CRON_EXPRESSION="${BACKUP_CRON:-0 2 * * *}"
+      - BACKUP_FILENAME=iot-backup-%Y-%m-%dT%H-%M-%S.tar.gz
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-7}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - tb_pgdata:/backup/tb_pgdata:ro
+      - ./zigbee2mqtt/data:/backup/zigbee2mqtt_data:ro
+      - ./nodered/data:/backup/nodered_data:ro
+      - ./mosquitto/data:/backup/mosquitto_data:ro
+      - ./backups:/archive
+    networks: [iot_net]
+
+networks:
+  iot_net:
+
+volumes:
+  tb_pgdata:

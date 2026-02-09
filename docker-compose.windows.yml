@@ -1,0 +1,7 @@
+services:
+  zigbee2mqtt:
+    profiles: ["zigbee"]
+    # Override Linux-only mounts/devices for Windows Docker Desktop
+    volumes:
+      - ./zigbee2mqtt/data:/app/data
+    devices: []

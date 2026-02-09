@@ -1,0 +1,22 @@
+name: Deploy Orange Pi
+
+on:
+  push:
+    branches: [main, master]
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, orange-pi]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          clean: false
+          fetch-depth: 0
+      - name: Docker info
+        run: docker info
+      - name: Deploy stack
+        run: |
+          docker compose pull
+          docker compose up -d
+          docker compose ps

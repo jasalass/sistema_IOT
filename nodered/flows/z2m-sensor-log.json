@@ -1,0 +1,99 @@
+[
+  {
+    "id": "f1b1a1a6e8b9b001",
+    "type": "tab",
+    "label": "Z2M Sensor Log",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "mqtt_in_log",
+    "type": "mqtt in",
+    "z": "f1b1a1a6e8b9b001",
+    "name": "Z2M Sensors",
+    "topic": "zigbee2mqtt/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_broker_main",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 160,
+    "y": 120,
+    "wires": [
+      [
+        "fn_stringify",
+        "debug_payload"
+      ]
+    ]
+  },
+  {
+    "id": "fn_stringify",
+    "type": "function",
+    "z": "f1b1a1a6e8b9b001",
+    "name": "Stringify payload",
+    "func": "if (typeof msg.payload !== \"string\") {\n  try {\n    msg.payload = JSON.stringify(msg.payload);\n  } catch (e) {}\n}\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 380,
+    "y": 120,
+    "wires": [
+      [
+        "file_log"
+      ]
+    ]
+  },
+  {
+    "id": "file_log",
+    "type": "file",
+    "z": "f1b1a1a6e8b9b001",
+    "name": "Append sensor log",
+    "filename": "/data/sensor.log",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "encoding": "none",
+    "x": 600,
+    "y": 120,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "debug_payload",
+    "type": "debug",
+    "z": "f1b1a1a6e8b9b001",
+    "name": "debug payload",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 390,
+    "y": 200,
+    "wires": []
+  },
+  {
+    "id": "mqtt_broker_main",
+    "type": "mqtt-broker",
+    "name": "Mosquitto",
+    "broker": "mosquitto",
+    "port": "1883",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "closeTopic": "",
+    "closePayload": "",
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": ""
+  }
+]

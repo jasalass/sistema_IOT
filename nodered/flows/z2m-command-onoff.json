@@ -1,0 +1,94 @@
+[
+  {
+    "id": "f3d3c3c8a0d0d003",
+    "type": "tab",
+    "label": "Z2M Command OnOff",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "inject_on",
+    "type": "inject",
+    "z": "f3d3c3c8a0d0d003",
+    "name": "ON",
+    "props": [
+      { "p": "payload" }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"state\":\"ON\"}",
+    "payloadType": "json",
+    "x": 160,
+    "y": 100,
+    "wires": [
+      [
+        "mqtt_out_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "inject_off",
+    "type": "inject",
+    "z": "f3d3c3c8a0d0d003",
+    "name": "OFF",
+    "props": [
+      { "p": "payload" }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"state\":\"OFF\"}",
+    "payloadType": "json",
+    "x": 160,
+    "y": 160,
+    "wires": [
+      [
+        "mqtt_out_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_out_cmd",
+    "type": "mqtt out",
+    "z": "f3d3c3c8a0d0d003",
+    "name": "Send to device",
+    "topic": "zigbee2mqtt/<device>/set",
+    "qos": "",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt_broker_main",
+    "x": 420,
+    "y": 130,
+    "wires": []
+  },
+  {
+    "id": "mqtt_broker_main",
+    "type": "mqtt-broker",
+    "name": "Mosquitto",
+    "broker": "mosquitto",
+    "port": "1883",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "closeTopic": "",
+    "closePayload": "",
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": ""
+  }
+]

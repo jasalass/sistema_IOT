@@ -1,0 +1,16 @@
+# Secrets
+.env
+mosquitto/passwordfile
+
+# Runtime data
+mosquitto/data/
+mosquitto/log/
+nodered/data/
+backups/
+
+# Zigbee2MQTT runtime data (keep configuration)
+zigbee2mqtt/data/*
+!zigbee2mqtt/data/configuration.yaml
+
+# Nested repo (ignore)
+sistema_IOT/

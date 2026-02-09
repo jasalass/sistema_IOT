@@ -1,0 +1,60 @@
+version: 5
+mqtt:
+  base_topic: zigbee2mqtt
+  server: mqtt://mosquitto:1883
+  user: iot
+  password: supersegura
+
+serial:
+  port: /dev/ttyACM0
+  adapter: zstack
+  rtscts: false
+  baudrate: 115200
+
+advanced:
+  log_level: info
+  channel: 11
+  network_key:
+    - 83
+    - 124
+    - 62
+    - 9
+    - 72
+    - 215
+    - 196
+    - 179
+    - 119
+    - 81
+    - 14
+    - 208
+    - 159
+    - 78
+    - 94
+    - 180
+  pan_id: 10138
+  ext_pan_id:
+    - 60
+    - 23
+    - 193
+    - 74
+    - 207
+    - 41
+    - 232
+    - 35
+
+frontend:
+  enabled: true
+  port: 8084
+
+homeassistant:
+  enabled: false
+
+onboarding: false
+
+devices:
+  "0xa4c138b54d85bbe7":
+    friendly_name: "Sensor humedad/temperatura"
+  "0xa4c1381e097b75cb":
+    friendly_name: "Ampolleta zigbee"
+  "0xa4c138005c257b0f":
+    friendly_name: "Switch Zigbee"
