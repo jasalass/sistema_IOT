@@ -1,171 +1,98 @@
-# ORKA IoT Stack (Orange Pi 3B)
+# ORKA IoT Stack (Local)
 
-100% local stack using Docker Compose:
-- Mosquitto (MQTT broker)
+Plantilla para levantar un stack IoT 100% local con Docker Compose:
+
+- Mosquitto (broker MQTT)
 - Zigbee2MQTT (Zigbee -> MQTT)
-- Node-RED (automations)
-- ThingsBoard CE + PostgreSQL (dashboards)
-- Daily backups of volumes
+- Node-RED (automatizacion)
+- ThingsBoard CE + PostgreSQL (visualizacion, reglas, almacenamiento)
+- Backup diario de volumenes
 
-This template is ARM-friendly and keeps all state on disk.
+Este repositorio esta preparado para correr en Orange Pi (ARM64) y tambien tiene modo de prueba en Windows.
 
-## Quick Start
-1. Find the adapter path (host):
-   ```sh
-   ls -l /dev/serial/by-id/
-   ```
-   Copy the full path into `.env` as `ZIGBEE_ADAPTER_HOST`.
+## Documentacion
 
-2. Make the script executable (Linux):
-   ```sh
-   chmod +x scripts/make-mqtt-pass.sh
-   ```
+- `docs/README.md`
+- `docs/01-arquitectura.md`
+- `docs/02-instalacion-orange-pi.md`
+- `docs/03-instalacion-windows.md`
+- `docs/04-operacion.md`
+- `docs/05-thingsboard-nodered.md`
+- `docs/06-cicd-orange-pi-runner.md`
+- `docs/07-backup-restore.md`
+- `docs/08-troubleshooting.md`
 
-3. Create the Mosquitto password file:
-   ```sh
-   ./scripts/make-mqtt-pass.sh
-   ```
+## Inicio rapido (Orange Pi)
 
-4. Start everything:
-   ```sh
-   docker compose up -d
-   ```
-
-5. Tail logs (first boot can take a while):
-   ```sh
-   docker compose logs -f zigbee2mqtt
-   docker compose logs -f mosquitto
-   docker compose logs -f thingsboard
-   ```
-
-6. Open UIs:
-   - Zigbee2MQTT: `http://<ip>:${Z2M_UI_PORT}`
-   - Node-RED: `http://<ip>:${NODERED_PORT}`
-   - ThingsBoard: `http://<ip>:${TB_PORT}`
-
-## Windows (Docker Desktop)
-En Windows, Docker Desktop **no puede** pasar un puerto `COM` directamente a un contenedor Linux. Por eso:
-- Si quieres Zigbee2MQTT en Docker, debes correr el stack dentro de **WSL2** y pasar el USB a WSL.
-- Si quieres quedarte 100% Windows, corre Zigbee2MQTT **nativo** y solo levanta el resto con Docker.
-
-### Opcion 1: Windows + Zigbee2MQTT nativo
-1. Crear passwordfile (PowerShell):
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File scripts\make-mqtt-pass.ps1
-   ```
-
-2. Levantar el stack sin Zigbee2MQTT (usa override):
-   ```powershell
-   docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d
-   ```
-
-3. En tu `configuration.yaml` de Zigbee2MQTT (Windows), apunta al broker:
-   ```yaml
-   mqtt:
-     server: mqtt://localhost:1883
-     user: iot
-     password: supersegura
-   ```
-
-### Opcion 2: Todo en WSL2 (Zigbee2MQTT dentro de Docker)
-1. Conecta el USB Zigbee a WSL2 (usbipd).
-2. Dentro de WSL2, ejecuta:
-   ```sh
-   ./scripts/make-mqtt-pass.sh
-   docker compose up -d
-   ```
-3. Asegura que `ZIGBEE_ADAPTER_HOST` use `/dev/serial/by-id/...`.
-
-## CI/CD (Deploy automatico a Orange Pi)
-Objetivo: cada `push` a GitHub despliega automaticamente en la Orange Pi usando un **runner self-hosted**.
-
-### 1) Preparar la Orange Pi
-1. Clona este repo en la Orange Pi (ej: `/opt/orka`).
-2. Crea el archivo `.env` local desde `/.env.example` y ajusta:
-   - `ZIGBEE_ADAPTER_HOST`
-   - credenciales MQTT
-   - `TZ`
-3. Asegura que el usuario del runner tenga acceso a Docker:
-   ```sh
-   sudo usermod -aG docker <usuario>
-   ```
-
-### 2) Instalar runner self-hosted
-En GitHub: `Settings -> Actions -> Runners -> New self-hosted runner`, elige Linux/ARM64 y sigue los comandos.
-Cuando registre el runner, **agrega el label `orange-pi`**.
-
-### 3) Workflow listo
-El workflow esta en:
-- `.github/workflows/deploy-orange-pi.yml`
-
-Dispara automaticamente en `push` a `main` o `master` y ejecuta:
-- `docker compose pull`
-- `docker compose up -d`
-
-Nota: el checkout usa `clean: false` para **no borrar datos locales** (volumenes y `.env`).
-
-## Verification (MQTT pub/sub)
-Use the credentials from `.env`:
+1. Crear `.env` desde el ejemplo:
 ```sh
-# Subscribe to all Zigbee2MQTT topics
-mosquitto_sub -h <host> -t "zigbee2mqtt/#" -u iot -P supersegura
-
-# Publish a test message
-mosquitto_pub -h <host> -t "zigbee2mqtt/test" -m '{"ping":1}' -u iot -P supersegura
-```
-If you want to run these inside the Mosquitto container:
-```sh
-docker compose exec mosquitto mosquitto_sub -h mosquitto -t "zigbee2mqtt/#" -u iot -P supersegura
+cp .env.example .env
 ```
 
-## Node-RED Example Flows
-Import any of these JSON files:
-- `nodered/flows/z2m-sensor-log.json`: logs all Zigbee2MQTT messages to `/data/sensor.log`.
-- `nodered/flows/z2m-telegram-alert.json`: sends Telegram alert if temperature > 30C.
-- `nodered/flows/z2m-command-onoff.json`: ON/OFF commands to `zigbee2mqtt/<device>/set`.
+2. Detectar adaptador Zigbee y actualizar `ZIGBEE_ADAPTER_HOST`:
+```sh
+ls -l /dev/serial/by-id/
+```
 
-After import:
-- Edit the MQTT broker node and set user/pass to match `.env`.
-- For Telegram flow, replace `<TELEGRAM_BOT_TOKEN>` and `<TELEGRAM_CHAT_ID>`.
-- Update `zigbee2mqtt/<device>/set` with your real device name.
+3. Crear carpetas runtime y permisos base:
+```sh
+mkdir -p mosquitto/data mosquitto/log nodered/data backups
+sudo chown -R 1883:1883 mosquitto/data mosquitto/log
+sudo chown -R 1000:1000 nodered/data backups
+```
 
-## Files and Persistence
-- Zigbee2MQTT: `./zigbee2mqtt/data`
-- Mosquitto: `./mosquitto/{data,log}` + `./mosquitto/passwordfile`
-- Node-RED: `./nodered/data`
-- ThingsBoard/Postgres: `tb_pgdata` volume
-- Backups: `./backups`
+4. Crear `mosquitto/passwordfile`:
+```sh
+chmod +x scripts/make-mqtt-pass.sh
+./scripts/make-mqtt-pass.sh
+sudo chown 1883:1883 mosquitto/passwordfile
+sudo chmod 640 mosquitto/passwordfile
+```
 
-## Zigbee2MQTT Notes
-- The Zigbee network keys, channel, PAN ID are preserved in `zigbee2mqtt/data/configuration.yaml` to avoid re-pairing.
-- The adapter is mapped by `/dev/serial/by-id/...` (host) to `/dev/ttyACM0` (container).
-- The config uses `mqtt://mosquitto:1883` (not `localhost`).
+5. Levantar stack:
+```sh
+docker compose up -d
+```
 
-## Backup
-The `backup` service runs daily and stores archives in `./backups`.
-Set schedule in `.env` with `BACKUP_CRON`.
+6. Ver estado:
+```sh
+docker compose ps
+docker compose logs -f zigbee2mqtt
+docker compose logs -f mosquitto
+```
 
-## ARM Notes
-If any image fails to pull on arm64:
-- Check the manifest: `docker buildx imagetools inspect <image>`
-- Pin a tag that supports arm64 or build locally
+## Inicio rapido (Windows)
 
-## Troubleshooting
-- Zigbee2MQTT cannot open the adapter:
-  - Confirm `ZIGBEE_ADAPTER_HOST` points to `/dev/serial/by-id/...`
-  - Ensure `/run/udev:/run/udev:ro` is mounted
-  - Check permissions: add user to `dialout`, or enable `user/group_add` in compose
-- MQTT auth errors:
-  - Recreate password file with `./scripts/make-mqtt-pass.sh` (Linux) or `scripts\\make-mqtt-pass.ps1` (Windows)
-  - Verify `MQTT_USER/MQTT_PASS` in `.env` match the Zigbee2MQTT config
-- Zigbee2MQTT UI not reachable:
-  - Verify `frontend.port` in `configuration.yaml` and the compose port mapping
-- ThingsBoard not ready:
-  - Give it a few minutes on first boot and check `docker compose logs -f thingsboard`
+Para Windows sin WSL2 USB passthrough, usar Zigbee2MQTT nativo y Docker para el resto:
 
-## Checklist (Quick Triage)
-- `docker compose ps` shows all services healthy/running
-- `ls -l /dev/serial/by-id/` shows the Zigbee adapter
-- `docker compose logs -f zigbee2mqtt` shows no serial errors
-- MQTT pub/sub works with your credentials
-- UIs load on the configured ports
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\make-mqtt-pass.ps1
+docker compose -f docker-compose.yml -f docker-compose.windows.yml up -d
+```
+
+Configura Zigbee2MQTT nativo para publicar a:
+
+```yaml
+mqtt:
+  server: mqtt://localhost:1883
+  user: iot
+  password: supersegura
+```
+
+## URLs
+
+- Zigbee2MQTT UI: `http://<ip>:8084`
+- Node-RED: `http://<ip>:1880`
+- ThingsBoard: `http://<ip>:8080`
+
+## CI/CD
+
+Hay workflow listo en `.github/workflows/deploy-orange-pi.yml` para deploy automatico con runner self-hosted etiquetado `orange-pi`.
+
+Detalle completo en `docs/06-cicd-orange-pi-runner.md`.
+
+## Notas de seguridad
+
+- No subir `.env` ni `mosquitto/passwordfile`.
+- Cambiar credenciales por defecto antes de produccion.
+- Mantener respaldo de `zigbee2mqtt/data/configuration.yaml` para no perder red Zigbee.

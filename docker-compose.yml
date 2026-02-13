@@ -60,7 +60,8 @@ services:
     networks: [iot_net]
 
   thingsboard:
-    image: thingsboard/tb-postgres:latest
+    # App-only image (uses external postgres service defined above)
+    image: thingsboard/tb-node:latest
     container_name: thingsboard
     restart: unless-stopped
     depends_on: [postgres]
