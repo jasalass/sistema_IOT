@@ -71,7 +71,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=${TB_DB_USER:-tb}
       - SPRING_DATASOURCE_PASSWORD=${TB_DB_PASS:-tbpass}
     ports:
-      - "${TB_PORT:-8080}:9090"
+      - "${TB_PORT:-8080}:8080"
     networks: [iot_net]
 
   backup:
