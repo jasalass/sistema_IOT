@@ -43,6 +43,7 @@ services:
     ports:
       - "${NODERED_PORT:-1880}:1880"
     volumes:
+      - ./nodered/settings.js:/data/settings.js:ro
       - ./nodered/data:/data
     networks: [iot_net]
 
