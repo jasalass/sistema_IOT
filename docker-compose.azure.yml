@@ -1,0 +1,5 @@
+services:
+  zigbee2mqtt:
+    # Azure VM cannot map USB Zigbee coordinators directly.
+    # Keep this service disabled by default and enable it only if serial-over-TCP is configured.
+    profiles: ["zigbee"]

@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${TB_DB:-thingsboard}
+      - POSTGRES_USER=${TB_DB_USER:-tb}
+      - POSTGRES_PASSWORD=${TB_DB_PASS:-tbpass}
+      - TZ=${TZ:-UTC}
+    volumes:
+      - tb_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${TB_DB_USER:-tb} -d ${TB_DB:-thingsboard}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [tb_cloud_net]
+
+  thingsboard:
+    image: thingsboard/tb-node:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - TZ=${TZ:-UTC}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${TB_DB:-thingsboard}
+      - SPRING_DATASOURCE_USERNAME=${TB_DB_USER:-tb}
+      - SPRING_DATASOURCE_PASSWORD=${TB_DB_PASS:-tbpass}
+    ports:
+      - "${TB_HTTP_PORT:-8080}:8080"
+      - "${TB_MQTT_PORT:-1883}:1883"
+    networks: [tb_cloud_net]
+
+  backup:
+    image: offen/docker-volume-backup:latest
+    restart: unless-stopped
+    environment:
+      - BACKUP_CRON_EXPRESSION=${BACKUP_CRON:-0 2 * * *}
+      - BACKUP_FILENAME=tb-cloud-backup-%Y-%m-%dT%H-%M-%S.tar.gz
+      - BACKUP_RETENTION_DAYS=${BACKUP_RETENTION_DAYS:-14}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - tb_pgdata:/backup/tb_pgdata:ro
+      - ./backups/cloud:/archive
+    networks: [tb_cloud_net]
+
+networks:
+  tb_cloud_net:
+
+volumes:
+  tb_pgdata:

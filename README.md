@@ -1,14 +1,11 @@
-# ORKA IoT Stack (Local)
+# ORKA IoT Stack
 
-Plantilla para levantar un stack IoT 100% local con Docker Compose:
+Plantilla para desplegar IoT en modo centralizado:
 
-- Mosquitto (broker MQTT)
-- Zigbee2MQTT (Zigbee -> MQTT)
-- Node-RED (automatizacion)
-- ThingsBoard CE + PostgreSQL (visualizacion, reglas, almacenamiento)
-- Backup diario de volumenes
+- Cloud: ThingsBoard CE + PostgreSQL + backup
+- Edge (por sitio): Mosquitto + Zigbee2MQTT + Node-RED + backup
 
-Este repositorio esta preparado para correr en Orange Pi (ARM64) y tambien tiene modo de prueba en Windows.
+Tambien se mantiene el compose monolitico para laboratorio local.
 
 ## Documentacion
 
@@ -21,12 +18,39 @@ Este repositorio esta preparado para correr en Orange Pi (ARM64) y tambien tiene
 - `docs/06-cicd-orange-pi-runner.md`
 - `docs/07-backup-restore.md`
 - `docs/08-troubleshooting.md`
+- `docs/09-instalacion-azure-vm.md`
+- `docs/10-arquitectura-cloud-edge.md`
+- `docs/11-instalacion-edge.md`
 
-## Inicio rapido (Orange Pi)
+## Modos de despliegue
 
-1. Crear `.env` desde el ejemplo:
+- `docker-compose.cloud.yml`: stack central en nube (Azure VM u otra Linux VM).
+- `docker-compose.edge.yml`: stack por sitio en Orange Pi/Raspberry Pi.
+- `docker-compose.yml`: stack monolitico legacy (todo en un solo host).
+
+## Inicio rapido (Cloud)
+
+1. Crear `.env` cloud:
 ```sh
-cp .env.example .env
+cp .env.cloud.example .env
+```
+
+2. Levantar ThingsBoard + PostgreSQL:
+```sh
+docker compose -f docker-compose.cloud.yml up -d
+```
+
+3. Verificar estado:
+```sh
+docker compose -f docker-compose.cloud.yml ps
+docker compose -f docker-compose.cloud.yml logs -f thingsboard
+```
+
+## Inicio rapido (Edge)
+
+1. Crear `.env` edge:
+```sh
+cp .env.edge.example .env
 ```
 
 2. Detectar adaptador Zigbee y actualizar `ZIGBEE_ADAPTER_HOST`:
@@ -36,9 +60,9 @@ ls -l /dev/serial/by-id/
 
 3. Crear carpetas runtime y permisos base:
 ```sh
-mkdir -p mosquitto/data mosquitto/log nodered/data backups
+mkdir -p mosquitto/data mosquitto/log nodered/data backups/edge
 sudo chown -R 1883:1883 mosquitto/data mosquitto/log
-sudo chown -R 1000:1000 nodered/data backups
+sudo chown -R 1000:1000 nodered/data backups/edge
 ```
 
 4. Crear `mosquitto/passwordfile`:
@@ -49,16 +73,16 @@ sudo chown 1883:1883 mosquitto/passwordfile
 sudo chmod 640 mosquitto/passwordfile
 ```
 
-5. Levantar stack:
+5. Levantar edge:
 ```sh
-docker compose up -d
+docker compose -f docker-compose.edge.yml up -d
 ```
 
 6. Ver estado:
 ```sh
-docker compose ps
-docker compose logs -f zigbee2mqtt
-docker compose logs -f mosquitto
+docker compose -f docker-compose.edge.yml ps
+docker compose -f docker-compose.edge.yml logs -f zigbee2mqtt
+docker compose -f docker-compose.edge.yml logs -f mosquitto
 ```
 
 ## Inicio rapido (Windows)
@@ -79,11 +103,22 @@ mqtt:
   password: supersegura
 ```
 
+## Inicio rapido (Azure VM)
+
+Para despliegue cloud en Ubuntu por SSH:
+
+```sh
+cp .env.cloud.example .env
+docker compose -f docker-compose.cloud.yml up -d
+```
+
+Guia completa: `docs/09-instalacion-azure-vm.md`
+
 ## URLs
 
-- Zigbee2MQTT UI: `http://<ip>:8084`
-- Node-RED: `http://<ip>:1880`
-- ThingsBoard: `http://<ip>:8080`
+- ThingsBoard (cloud): `http://<ip-cloud>:8080`
+- Node-RED (edge): `http://<ip-edge>:1880`
+- Zigbee2MQTT UI (edge): `http://<ip-edge>:8084`
 
 ## CI/CD
 

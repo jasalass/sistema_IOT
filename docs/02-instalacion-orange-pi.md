@@ -1,5 +1,8 @@
 # Instalacion en Orange Pi
 
+> Nota: este documento corresponde al modo monolitico (`docker-compose.yml`).
+> Para modo edge recomendado, usar `docs/11-instalacion-edge.md`.
+
 ## Prerrequisitos
 
 - Orange Pi con Linux (arm64).

@@ -12,3 +12,6 @@ Este directorio contiene la documentacion operativa del stack.
 - `06-cicd-orange-pi-runner.md`: runner self-hosted y deploy por GitHub Actions.
 - `07-backup-restore.md`: politicas de backup y pasos de restauracion.
 - `08-troubleshooting.md`: problemas comunes y solucion.
+- `09-instalacion-azure-vm.md`: instalacion en Azure VM (Ubuntu por SSH).
+- `10-arquitectura-cloud-edge.md`: diseno recomendado cloud central + edges.
+- `11-instalacion-edge.md`: instalacion de stack edge en Orange Pi/Raspberry Pi.

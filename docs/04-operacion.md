@@ -1,29 +1,34 @@
 # Operacion diaria
 
+Para modo separado, usa siempre `-f docker-compose.cloud.yml` o `-f docker-compose.edge.yml`.
+
 ## Comandos base
 
 ```sh
 # Estado
-docker compose ps
+docker compose -f docker-compose.edge.yml ps
+docker compose -f docker-compose.cloud.yml ps
 
 # Levantar/actualizar
-docker compose up -d
+docker compose -f docker-compose.edge.yml up -d
+docker compose -f docker-compose.cloud.yml up -d
 
 # Reiniciar servicio
-docker compose restart mosquitto
+docker compose -f docker-compose.edge.yml restart mosquitto
 
 # Detener stack
-docker compose down
+docker compose -f docker-compose.edge.yml down
+docker compose -f docker-compose.cloud.yml down
 ```
 
 ## Logs utiles
 
 ```sh
-docker compose logs -f zigbee2mqtt
-docker compose logs -f mosquitto
-docker compose logs -f nodered
-docker compose logs -f thingsboard
-docker compose logs -f backup
+docker compose -f docker-compose.edge.yml logs -f zigbee2mqtt
+docker compose -f docker-compose.edge.yml logs -f mosquitto
+docker compose -f docker-compose.edge.yml logs -f nodered
+docker compose -f docker-compose.cloud.yml logs -f thingsboard
+docker compose -f docker-compose.cloud.yml logs -f backup
 ```
 
 ## Pruebas MQTT
@@ -61,8 +66,10 @@ Importar por:
 
 ```sh
 git pull
-docker compose pull
-docker compose up -d
+docker compose -f docker-compose.edge.yml pull
+docker compose -f docker-compose.cloud.yml pull
+docker compose -f docker-compose.edge.yml up -d
+docker compose -f docker-compose.cloud.yml up -d
 ```
 
 ## Verificacion funcional rapida

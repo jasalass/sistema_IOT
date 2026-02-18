@@ -1,5 +1,8 @@
 # Arquitectura
 
+> Nota: este documento describe el modo monolitico (`docker-compose.yml`).
+> Para el modo recomendado cloud + multi-edge, revisar `docs/10-arquitectura-cloud-edge.md`.
+
 ## Componentes
 
 - `mosquitto`: broker MQTT central con auth (`allow_anonymous false`).

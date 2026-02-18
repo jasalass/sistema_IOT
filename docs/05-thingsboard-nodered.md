@@ -11,6 +11,11 @@ Para telemetria y dashboards usar `tenant`.
 
 Ventaja: auto-creacion de dispositivos desde Zigbee2MQTT sin token por dispositivo.
 
+En modo cloud + edge:
+
+- Entrada Zigbee desde broker local edge (`mosquitto:1883`).
+- Salida a ThingsBoard cloud (`<TB_CLOUD_HOST>:<TB_CLOUD_MQTT_PORT>`).
+
 ### Flujo de telemetria
 
 - Entrada: `zigbee2mqtt/#`
@@ -19,7 +24,7 @@ Ventaja: auto-creacion de dispositivos desde Zigbee2MQTT sin token por dispositi
   - `zigbee2mqtt/<device>/set`
 - Salida a ThingsBoard:
   - Topic: `v1/gateway/telemetry`
-  - Broker: `thingsboard:1883`
+  - Broker: `TB_CLOUD_HOST:TB_CLOUD_MQTT_PORT`
   - Usuario: token del Gateway
 
 ### Cache de estado
@@ -74,6 +79,6 @@ return (data[0].value || '').toString().toUpperCase() === 'ON';
 ## Causas tipicas de timeout RPC
 
 - Nodo function con 1 salida (sin respuesta a TB).
-- Broker de respuesta apuntando a `mosquitto` en vez de `thingsboard`.
+- Broker de respuesta apuntando a `mosquitto` en vez del broker MQTT de ThingsBoard cloud.
 - `getState` sin manejo y `params` nulo.
 - Widget esperando booleano pero recibiendo string `ON/OFF` sin converter.

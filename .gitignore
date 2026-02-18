@@ -1,5 +1,7 @@
 # Secrets
 .env
+.env.cloud
+.env.edge
 mosquitto/passwordfile
 
 # Runtime data
