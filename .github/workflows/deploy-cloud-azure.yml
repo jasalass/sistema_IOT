@@ -57,7 +57,11 @@ jobs:
           export BACKUP_CRON="${BACKUP_CRON:-0 2 * * *}"
           export BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-14}"
           export BACKUP_ARCHIVE_DIR="${BACKUP_ARCHIVE_DIR:-$HOME/cloud-backups}"
+          export COMPOSE_PROJECT_NAME="sistema_iot"
           mkdir -p "${BACKUP_ARCHIVE_DIR}"
+
+          # One-time cleanup for old project name used during runner migration.
+          docker compose -p repo -f docker-compose.cloud.yml down --remove-orphans || true
 
           if [ "${CLOUD_RESET_DB_ON_DEPLOY:-false}" = "true" ]; then
             echo "CLOUD_RESET_DB_ON_DEPLOY=true -> recreating DB volume"
