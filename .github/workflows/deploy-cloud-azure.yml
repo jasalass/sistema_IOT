@@ -1,0 +1,22 @@
+name: Deploy Cloud Azure
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, azure-vm, cloud]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+          fetch-depth: 0
+
+      - run: docker info
+
+      - run: |
+          docker compose -f docker-compose.cloud.yml pull
+          docker compose -f docker-compose.cloud.yml up -d
+          docker compose -f docker-compose.cloud.yml ps
