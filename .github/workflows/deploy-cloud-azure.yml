@@ -98,12 +98,28 @@ jobs:
           SAFE_DB_NAME="${TB_DB//\"/}"
           SAFE_DB_NAME="${SAFE_DB_NAME//\'/}"
           SAFE_DB_PASS="${TB_DB_PASS//\'/''}"
-          if ! docker exec -u postgres "${PG_CONTAINER}" psql -At -d postgres -c "SELECT 1 FROM pg_roles WHERE rolname='${SAFE_DB_USER}';" | grep -q 1; then
-            docker exec -u postgres "${PG_CONTAINER}" psql -v ON_ERROR_STOP=1 -d postgres -c "CREATE ROLE \"${SAFE_DB_USER}\" LOGIN;"
+
+          DB_ADMIN_USER=""
+          for CANDIDATE in "${SAFE_DB_USER}" "postgres"; do
+            if docker exec -u postgres "${PG_CONTAINER}" psql -At -U "${CANDIDATE}" -d postgres -c "SELECT 1;" >/dev/null 2>&1; then
+              DB_ADMIN_USER="${CANDIDATE}"
+              break
+            fi
+          done
+
+          if [ -z "${DB_ADMIN_USER}" ]; then
+            echo "No usable admin DB role found (tried '${SAFE_DB_USER}' and 'postgres')."
+            exit 1
           fi
-          docker exec -u postgres "${PG_CONTAINER}" psql -v ON_ERROR_STOP=1 -d postgres -c "ALTER ROLE \"${SAFE_DB_USER}\" WITH PASSWORD '${SAFE_DB_PASS}';"
-          if ! docker exec -u postgres "${PG_CONTAINER}" psql -At -d postgres -c "SELECT 1 FROM pg_database WHERE datname='${SAFE_DB_NAME}';" | grep -q 1; then
-            docker exec -u postgres "${PG_CONTAINER}" psql -v ON_ERROR_STOP=1 -d postgres -c "CREATE DATABASE \"${SAFE_DB_NAME}\" OWNER \"${SAFE_DB_USER}\";"
+
+          echo "Using DB admin role: ${DB_ADMIN_USER}"
+
+          if ! docker exec -u postgres "${PG_CONTAINER}" psql -At -U "${DB_ADMIN_USER}" -d postgres -c "SELECT 1 FROM pg_roles WHERE rolname='${SAFE_DB_USER}';" | grep -q 1; then
+            docker exec -u postgres "${PG_CONTAINER}" psql -v ON_ERROR_STOP=1 -U "${DB_ADMIN_USER}" -d postgres -c "CREATE ROLE \"${SAFE_DB_USER}\" LOGIN;"
+          fi
+          docker exec -u postgres "${PG_CONTAINER}" psql -v ON_ERROR_STOP=1 -U "${DB_ADMIN_USER}" -d postgres -c "ALTER ROLE \"${SAFE_DB_USER}\" WITH PASSWORD '${SAFE_DB_PASS}';"
+          if ! docker exec -u postgres "${PG_CONTAINER}" psql -At -U "${DB_ADMIN_USER}" -d postgres -c "SELECT 1 FROM pg_database WHERE datname='${SAFE_DB_NAME}';" | grep -q 1; then
+            docker exec -u postgres "${PG_CONTAINER}" psql -v ON_ERROR_STOP=1 -U "${DB_ADMIN_USER}" -d postgres -c "CREATE DATABASE \"${SAFE_DB_NAME}\" OWNER \"${SAFE_DB_USER}\";"
           fi
 
           # Start or recreate ThingsBoard after DB credentials are aligned.
