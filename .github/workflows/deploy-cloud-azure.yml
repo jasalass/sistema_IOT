@@ -46,6 +46,7 @@ jobs:
           BACKUP_CRON: ${{ vars.BACKUP_CRON }}
           BACKUP_RETENTION_DAYS: ${{ vars.BACKUP_RETENTION_DAYS }}
           BACKUP_ARCHIVE_DIR: ${{ vars.BACKUP_ARCHIVE_DIR }}
+          TB_LOAD_DEMO: ${{ vars.TB_LOAD_DEMO }}
           CLOUD_RESET_DB_ON_DEPLOY: ${{ vars.CLOUD_RESET_DB_ON_DEPLOY }}
         run: |
           set -euo pipefail
@@ -57,6 +58,7 @@ jobs:
           export BACKUP_CRON="${BACKUP_CRON:-0 2 * * *}"
           export BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-14}"
           export BACKUP_ARCHIVE_DIR="${BACKUP_ARCHIVE_DIR:-$HOME/cloud-backups}"
+          export TB_LOAD_DEMO="${TB_LOAD_DEMO:-false}"
           export COMPOSE_PROJECT_NAME="sistema_iot"
           mkdir -p "${BACKUP_ARCHIVE_DIR}"
 
@@ -120,6 +122,12 @@ jobs:
           docker exec -u postgres "${PG_CONTAINER}" psql -v ON_ERROR_STOP=1 -U "${DB_ADMIN_USER}" -d postgres -c "ALTER ROLE \"${SAFE_DB_USER}\" WITH PASSWORD '${SAFE_DB_PASS}';"
           if ! docker exec -u postgres "${PG_CONTAINER}" psql -At -U "${DB_ADMIN_USER}" -d postgres -c "SELECT 1 FROM pg_database WHERE datname='${SAFE_DB_NAME}';" | grep -q 1; then
             docker exec -u postgres "${PG_CONTAINER}" psql -v ON_ERROR_STOP=1 -U "${DB_ADMIN_USER}" -d postgres -c "CREATE DATABASE \"${SAFE_DB_NAME}\" OWNER \"${SAFE_DB_USER}\";"
+          fi
+
+          SCHEMA_READY="$(docker exec -u postgres "${PG_CONTAINER}" psql -At -U "${DB_ADMIN_USER}" -d "${SAFE_DB_NAME}" -c "SELECT to_regclass('public.queue') IS NOT NULL;" | tr -d '\r')"
+          if [ "${SCHEMA_READY}" != "t" ]; then
+            echo "ThingsBoard schema not found. Running initialization (INSTALL_TB=true, LOAD_DEMO=${TB_LOAD_DEMO})."
+            docker compose -f docker-compose.cloud.yml run --rm -e INSTALL_TB=true -e LOAD_DEMO="${TB_LOAD_DEMO}" thingsboard
           fi
 
           # Start or recreate ThingsBoard after DB credentials are aligned.
