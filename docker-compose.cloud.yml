@@ -42,7 +42,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - tb_pgdata:/backup/tb_pgdata:ro
-      - ./backups/cloud:/archive
+      - ${BACKUP_ARCHIVE_DIR:-./backups/cloud}:/archive
     networks: [tb_cloud_net]
 
 networks:

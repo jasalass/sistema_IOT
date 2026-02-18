@@ -5,18 +5,61 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-cloud-azure
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: [self-hosted, azure-vm, cloud]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
-          clean: false
+          clean: true
           fetch-depth: 0
 
-      - run: docker info
+      - name: Validate required secrets
+        shell: bash
+        env:
+          TB_DB_PASS: ${{ secrets.TB_DB_PASS }}
+        run: |
+          set -euo pipefail
+          : "${TB_DB_PASS:?Missing GitHub secret TB_DB_PASS}"
 
-      - run: |
+      - name: Docker info
+        run: docker info
+
+      - name: Deploy cloud stack
+        shell: bash
+        env:
+          TZ: ${{ vars.TZ }}
+          TB_DB: ${{ vars.TB_DB }}
+          TB_DB_USER: ${{ vars.TB_DB_USER }}
+          TB_DB_PASS: ${{ secrets.TB_DB_PASS }}
+          TB_HTTP_PORT: ${{ vars.TB_HTTP_PORT }}
+          TB_MQTT_PORT: ${{ vars.TB_MQTT_PORT }}
+          BACKUP_CRON: ${{ vars.BACKUP_CRON }}
+          BACKUP_RETENTION_DAYS: ${{ vars.BACKUP_RETENTION_DAYS }}
+          BACKUP_ARCHIVE_DIR: ${{ vars.BACKUP_ARCHIVE_DIR }}
+          CLOUD_RESET_DB_ON_DEPLOY: ${{ vars.CLOUD_RESET_DB_ON_DEPLOY }}
+        run: |
+          set -euo pipefail
+          export TZ="${TZ:-UTC}"
+          export TB_DB="${TB_DB:-thingsboard}"
+          export TB_DB_USER="${TB_DB_USER:-tb}"
+          export TB_HTTP_PORT="${TB_HTTP_PORT:-8080}"
+          export TB_MQTT_PORT="${TB_MQTT_PORT:-1883}"
+          export BACKUP_CRON="${BACKUP_CRON:-0 2 * * *}"
+          export BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-14}"
+          export BACKUP_ARCHIVE_DIR="${BACKUP_ARCHIVE_DIR:-$HOME/cloud-backups}"
+          mkdir -p "${BACKUP_ARCHIVE_DIR}"
+
+          if [ "${CLOUD_RESET_DB_ON_DEPLOY:-false}" = "true" ]; then
+            echo "CLOUD_RESET_DB_ON_DEPLOY=true -> recreating DB volume"
+            docker compose -f docker-compose.cloud.yml down -v --remove-orphans || true
+          fi
+
           docker compose -f docker-compose.cloud.yml pull
           docker compose -f docker-compose.cloud.yml up -d
           docker compose -f docker-compose.cloud.yml ps
