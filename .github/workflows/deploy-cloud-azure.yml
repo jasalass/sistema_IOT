@@ -13,11 +13,15 @@ jobs:
   deploy:
     runs-on: [self-hosted, azure-vm, cloud]
     timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: repo
     steps:
       - uses: actions/checkout@v4
         with:
           clean: false
           fetch-depth: 0
+          path: repo
 
       - name: Validate required secrets
         shell: bash
