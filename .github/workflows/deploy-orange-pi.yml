@@ -16,6 +16,10 @@ on:
 jobs:
   deploy:
     runs-on: [self-hosted, orange-pi]
+    env:
+      TB_CLOUD_HOST: ${{ vars.TB_CLOUD_HOST }}
+      TB_CLOUD_MQTT_PORT: ${{ vars.TB_CLOUD_MQTT_PORT }}
+      TB_GATEWAY_TOKEN: ${{ secrets.TB_GATEWAY_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,6 +28,38 @@ jobs:
           fetch-depth: 0
       - name: Docker info
         run: docker info
+      - name: Sync edge cloud settings into .env
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -f .env ]; then
+            cp .env.edge.example .env
+          fi
+
+          if [ -z "${TB_GATEWAY_TOKEN:-}" ]; then
+            echo "Missing required GitHub secret: TB_GATEWAY_TOKEN"
+            exit 1
+          fi
+
+          update_kv() {
+            local key="$1"
+            local val="$2"
+            [ -z "${val}" ] && return 0
+            awk -F= -v k="${key}" -v v="${val}" '
+              BEGIN { done=0 }
+              $1==k { print k"="v; done=1; next }
+              { print }
+              END { if (!done) print k"="v }
+            ' .env > .env.tmp
+            mv .env.tmp .env
+          }
+
+          update_kv "TB_CLOUD_HOST" "${TB_CLOUD_HOST:-}"
+          update_kv "TB_CLOUD_MQTT_PORT" "${TB_CLOUD_MQTT_PORT:-}"
+          update_kv "TB_GATEWAY_TOKEN" "${TB_GATEWAY_TOKEN:-}"
+
+          grep -E '^(TB_CLOUD_HOST|TB_CLOUD_MQTT_PORT|TB_GATEWAY_TOKEN)=' .env | sed 's/TB_GATEWAY_TOKEN=.*/TB_GATEWAY_TOKEN=***masked***/'
       - name: Remove legacy local ThingsBoard containers
         run: |
           docker rm -f thingsboard tb_postgres volume_backup || true

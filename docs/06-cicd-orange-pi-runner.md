@@ -14,6 +14,7 @@ Job:
 - Pasos:
   - checkout (`clean: false`)
   - `docker info`
+  - sincroniza `TB_CLOUD_*` y `TB_GATEWAY_TOKEN` en `.env`
   - `docker compose pull`
   - `docker compose up -d`
   - `docker compose ps`
@@ -42,7 +43,9 @@ sudo ./svc.sh start
 
 - Docker daemon corriendo.
 - Usuario del runner en grupo `docker`.
-- `.env` presente en workspace del repo.
+- Si no existe `.env`, se crea desde `.env.edge.example`.
+- Secret de GitHub requerido: `TB_GATEWAY_TOKEN`.
+- Variables recomendadas en GitHub: `TB_CLOUD_HOST`, `TB_CLOUD_MQTT_PORT`.
 - `mosquitto/passwordfile` valido en workspace.
 
 ## Verificacion runner
