@@ -17,13 +17,15 @@ services:
     networks: [tb_cloud_net]
 
   thingsboard:
-    image: thingsboard/tb-node:latest
+    image: thingsboard/tb-node:4.3.0.1
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
     environment:
       - TZ=${TZ:-UTC}
+      - TB_SERVICE_ID=tb-ce-node
+      - TB_QUEUE_TYPE=in-memory
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${TB_DB:-thingsboard}
       - SPRING_DATASOURCE_USERNAME=${TB_DB_USER:-tb}
       - SPRING_DATASOURCE_PASSWORD=${TB_DB_PASS:-tbpass}
