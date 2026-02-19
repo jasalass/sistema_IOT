@@ -24,6 +24,9 @@ jobs:
           fetch-depth: 0
       - name: Docker info
         run: docker info
+      - name: Remove legacy local ThingsBoard containers
+        run: |
+          docker rm -f thingsboard tb_postgres volume_backup || true
       - name: Deploy stack
         run: |
           docker compose -f docker-compose.edge.yml pull mosquitto zigbee2mqtt backup
