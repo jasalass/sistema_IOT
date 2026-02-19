@@ -15,3 +15,4 @@ Este directorio contiene la documentacion operativa del stack.
 - `09-instalacion-azure-vm.md`: instalacion en Azure VM (Ubuntu por SSH).
 - `10-arquitectura-cloud-edge.md`: diseno recomendado cloud central + edges.
 - `11-instalacion-edge.md`: instalacion de stack edge en Orange Pi/Raspberry Pi.
+- `12-validacion-offline-first.md`: pruebas de control local sin internet y resincronizacion cloud.

@@ -10,7 +10,7 @@ docker compose -f docker-compose.edge.yml ps
 docker compose -f docker-compose.cloud.yml ps
 
 # Levantar/actualizar
-docker compose -f docker-compose.edge.yml up -d
+docker compose -f docker-compose.edge.yml up -d --build
 docker compose -f docker-compose.cloud.yml up -d
 
 # Reiniciar servicio
@@ -68,7 +68,7 @@ Importar por:
 git pull
 docker compose -f docker-compose.edge.yml pull
 docker compose -f docker-compose.cloud.yml pull
-docker compose -f docker-compose.edge.yml up -d
+docker compose -f docker-compose.edge.yml up -d --build
 docker compose -f docker-compose.cloud.yml up -d
 ```
 

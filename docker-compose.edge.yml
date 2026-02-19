@@ -27,14 +27,21 @@ services:
     networks: [edge_net]
 
   nodered:
-    image: nodered/node-red:latest
+    build:
+      context: .
+      dockerfile: nodered/Dockerfile
+    image: orka/nodered-edge:latest
     restart: unless-stopped
     depends_on: [mosquitto]
     environment:
       - TZ=${TZ:-UTC}
+      - MQTT_USER=${MQTT_USER}
+      - MQTT_PASS=${MQTT_PASS}
       - TB_CLOUD_HOST=${TB_CLOUD_HOST:-thingsboard.example.com}
       - TB_CLOUD_MQTT_PORT=${TB_CLOUD_MQTT_PORT:-1883}
       - TB_GATEWAY_TOKEN=${TB_GATEWAY_TOKEN:-replace-me}
+      - EDGE_SWITCH_DEVICE=${EDGE_SWITCH_DEVICE:-Switch Zigbee}
+      - EDGE_SENSOR_DEVICE=${EDGE_SENSOR_DEVICE:-Sensor humedad/temperatura}
     ports:
       - "${NODERED_PORT:-1880}:1880"
     volumes:

@@ -1,0 +1,504 @@
+[
+  {
+    "id": "7d2eb93b29f9d001",
+    "type": "tab",
+    "label": "Offline First Local Control",
+    "disabled": false,
+    "info": ""
+  },
+  {
+    "id": "ui_tab_local",
+    "type": "ui_tab",
+    "name": "Control Local",
+    "icon": "dashboard",
+    "disabled": false,
+    "hidden": false
+  },
+  {
+    "id": "ui_group_main",
+    "type": "ui_group",
+    "name": "Estado y Control",
+    "tab": "ui_tab_local",
+    "order": 1,
+    "disp": true,
+    "width": "12",
+    "collapse": false
+  },
+  {
+    "id": "mqtt_broker_local",
+    "type": "mqtt-broker",
+    "name": "Mosquitto Local",
+    "broker": "mosquitto",
+    "port": "1883",
+    "clientid": "",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": ""
+  },
+  {
+    "id": "mqtt_broker_tb_cloud",
+    "type": "mqtt-broker",
+    "name": "ThingsBoard Cloud",
+    "broker": "${TB_CLOUD_HOST}",
+    "port": "${TB_CLOUD_MQTT_PORT}",
+    "clientid": "edge-gateway-${HOSTNAME}",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": false,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": ""
+  },
+  {
+    "id": "mqtt_in_switch_state",
+    "type": "mqtt in",
+    "z": "7d2eb93b29f9d001",
+    "name": "Estado switch local",
+    "topic": "zigbee2mqtt/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_broker_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 170,
+    "y": 120,
+    "wires": [
+      [
+        "fn_extract_switch_state"
+      ]
+    ]
+  },
+  {
+    "id": "fn_extract_switch_state",
+    "type": "function",
+    "z": "7d2eb93b29f9d001",
+    "name": "Parse estado switch",
+    "func": "const target = (env.get(\"EDGE_SWITCH_DEVICE\") || \"Switch Zigbee\").trim();\nif (msg.topic !== `zigbee2mqtt/${target}`) return null;\n\nlet data = msg.payload;\nif (typeof data === \"string\") {\n  try { data = JSON.parse(data); } catch (e) { return null; }\n}\nif (!data || typeof data !== \"object\" || data.state === undefined) return null;\n\nconst on = String(data.state).toUpperCase() === \"ON\";\nflow.set(\"local_switch_state\", on);\nreturn { payload: on, topic: target };",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 410,
+    "y": 120,
+    "wires": [
+      [
+        "ui_switch_local",
+        "fn_local_state_text"
+      ]
+    ]
+  },
+  {
+    "id": "ui_switch_local",
+    "type": "ui_switch",
+    "z": "7d2eb93b29f9d001",
+    "name": "Switch Local",
+    "label": "Switch principal",
+    "tooltip": "",
+    "group": "ui_group_main",
+    "order": 2,
+    "width": "6",
+    "height": "1",
+    "passthru": false,
+    "decouple": "true",
+    "topic": "",
+    "style": "",
+    "onvalue": "true",
+    "onvalueType": "bool",
+    "onicon": "",
+    "oncolor": "",
+    "offvalue": "false",
+    "offvalueType": "bool",
+    "officon": "",
+    "offcolor": "",
+    "animate": false,
+    "className": "",
+    "x": 640,
+    "y": 120,
+    "wires": [
+      [
+        "fn_build_switch_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "fn_build_switch_cmd",
+    "type": "function",
+    "z": "7d2eb93b29f9d001",
+    "name": "Build comando ON/OFF",
+    "func": "const target = (env.get(\"EDGE_SWITCH_DEVICE\") || \"Switch Zigbee\").trim();\nconst on = msg.payload === true || String(msg.payload).toUpperCase() === \"ON\";\nmsg.topic = `zigbee2mqtt/${target}/set`;\nmsg.payload = { state: on ? \"ON\" : \"OFF\" };\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 880,
+    "y": 120,
+    "wires": [
+      [
+        "mqtt_out_switch_cmd",
+        "fn_local_cmd_text"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_out_switch_cmd",
+    "type": "mqtt out",
+    "z": "7d2eb93b29f9d001",
+    "name": "Publicar comando local",
+    "topic": "",
+    "qos": "",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt_broker_local",
+    "x": 1130,
+    "y": 120,
+    "wires": []
+  },
+  {
+    "id": "fn_local_state_text",
+    "type": "function",
+    "z": "7d2eb93b29f9d001",
+    "name": "Texto estado switch",
+    "func": "msg.payload = msg.payload ? \"Switch: ON\" : \"Switch: OFF\";\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 640,
+    "y": 180,
+    "wires": [
+      [
+        "ui_text_switch"
+      ]
+    ]
+  },
+  {
+    "id": "fn_local_cmd_text",
+    "type": "function",
+    "z": "7d2eb93b29f9d001",
+    "name": "Texto ultimo comando",
+    "func": "msg.payload = `Comando enviado: ${msg.payload.state}`;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 1130,
+    "y": 180,
+    "wires": [
+      [
+        "ui_text_last_cmd"
+      ]
+    ]
+  },
+  {
+    "id": "ui_text_switch",
+    "type": "ui_text",
+    "z": "7d2eb93b29f9d001",
+    "group": "ui_group_main",
+    "order": 1,
+    "width": "6",
+    "height": "1",
+    "name": "Estado actual",
+    "label": "Estado actual",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "x": 890,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "ui_text_last_cmd",
+    "type": "ui_text",
+    "z": "7d2eb93b29f9d001",
+    "group": "ui_group_main",
+    "order": 3,
+    "width": "12",
+    "height": "1",
+    "name": "Ultimo comando",
+    "label": "Ultimo comando",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "x": 1380,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "mqtt_in_sensor",
+    "type": "mqtt in",
+    "z": "7d2eb93b29f9d001",
+    "name": "Sensor local",
+    "topic": "zigbee2mqtt/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_broker_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 150,
+    "y": 260,
+    "wires": [
+      [
+        "fn_extract_sensor"
+      ]
+    ]
+  },
+  {
+    "id": "fn_extract_sensor",
+    "type": "function",
+    "z": "7d2eb93b29f9d001",
+    "name": "Parse sensor T/H",
+    "func": "const target = (env.get(\"EDGE_SENSOR_DEVICE\") || \"Sensor humedad/temperatura\").trim();\nif (msg.topic !== `zigbee2mqtt/${target}`) return null;\n\nlet data = msg.payload;\nif (typeof data === \"string\") {\n  try { data = JSON.parse(data); } catch (e) { return null; }\n}\nif (!data || typeof data !== \"object\") return null;\n\nconst out1 = data.temperature !== undefined ? { payload: Number(data.temperature) } : null;\nconst out2 = data.humidity !== undefined ? { payload: Number(data.humidity) } : null;\nreturn [out1, out2];",
+    "outputs": 2,
+    "noerr": 0,
+    "x": 380,
+    "y": 260,
+    "wires": [
+      [
+        "ui_gauge_temp"
+      ],
+      [
+        "ui_gauge_hum"
+      ]
+    ]
+  },
+  {
+    "id": "ui_gauge_temp",
+    "type": "ui_gauge",
+    "z": "7d2eb93b29f9d001",
+    "name": "Temperatura",
+    "group": "ui_group_main",
+    "order": 4,
+    "width": "6",
+    "height": "4",
+    "gtype": "gage",
+    "title": "Temperatura",
+    "label": "C",
+    "format": "{{value}}",
+    "min": "0",
+    "max": "50",
+    "colors": [
+      "#00b500",
+      "#e6e600",
+      "#ca3838"
+    ],
+    "seg1": "20",
+    "seg2": "30",
+    "className": "",
+    "x": 620,
+    "y": 240,
+    "wires": []
+  },
+  {
+    "id": "ui_gauge_hum",
+    "type": "ui_gauge",
+    "z": "7d2eb93b29f9d001",
+    "name": "Humedad",
+    "group": "ui_group_main",
+    "order": 5,
+    "width": "6",
+    "height": "4",
+    "gtype": "gage",
+    "title": "Humedad",
+    "label": "%",
+    "format": "{{value}}",
+    "min": "0",
+    "max": "100",
+    "colors": [
+      "#00b5ff",
+      "#6fcf97",
+      "#f2c94c"
+    ],
+    "seg1": "45",
+    "seg2": "70",
+    "className": "",
+    "x": 620,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "mqtt_in_tb_raw",
+    "type": "mqtt in",
+    "z": "7d2eb93b29f9d001",
+    "name": "Raw Z2M para cloud",
+    "topic": "zigbee2mqtt/#",
+    "qos": "0",
+    "datatype": "auto",
+    "broker": "mqtt_broker_local",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 170,
+    "y": 420,
+    "wires": [
+      [
+        "fn_to_tb_payload"
+      ]
+    ]
+  },
+  {
+    "id": "fn_to_tb_payload",
+    "type": "function",
+    "z": "7d2eb93b29f9d001",
+    "name": "Map Z2M -> TB Gateway",
+    "func": "if (!msg.topic || !msg.topic.startsWith(\"zigbee2mqtt/\")) return null;\nconst device = msg.topic.replace(\"zigbee2mqtt/\", \"\");\nif (!device || device.startsWith(\"bridge\") || device.endsWith(\"/set\")) return null;\n\nlet data = msg.payload;\nif (typeof data === \"string\") {\n  try { data = JSON.parse(data); } catch (e) { return null; }\n}\nif (!data || typeof data !== \"object\") return null;\n\nconst values = {};\nfor (const [k, v] of Object.entries(data)) {\n  if (v === null || v === undefined) continue;\n  if ([\"number\", \"boolean\", \"string\"].includes(typeof v)) {\n    values[k] = v;\n  }\n}\nif (Object.keys(values).length === 0) return null;\n\nmsg.topic = \"v1/gateway/telemetry\";\nmsg.payload = {\n  [device]: [{\n    ts: Date.now(),\n    values\n  }]\n};\nmsg.qos = 1;\nmsg.retain = false;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 430,
+    "y": 420,
+    "wires": [
+      [
+        "fn_queue_or_send"
+      ]
+    ]
+  },
+  {
+    "id": "fn_queue_or_send",
+    "type": "function",
+    "z": "7d2eb93b29f9d001",
+    "name": "Queue when cloud offline",
+    "func": "const connected = global.get(\"tb_cloud_connected\") === true;\nconst queue = flow.get(\"tb_queue\") || [];\n\nif (connected) {\n  return [msg, null];\n}\n\nqueue.push({ topic: msg.topic, payload: msg.payload, qos: 1, retain: false });\nif (queue.length > 5000) queue.shift();\nflow.set(\"tb_queue\", queue);\nreturn [null, { payload: `Cloud OFFLINE - cola: ${queue.length}` }];",
+    "outputs": 2,
+    "noerr": 0,
+    "x": 690,
+    "y": 420,
+    "wires": [
+      [
+        "mqtt_out_tb"
+      ],
+      [
+        "ui_text_cloud"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_out_tb",
+    "type": "mqtt out",
+    "z": "7d2eb93b29f9d001",
+    "name": "ThingsBoard Telemetry",
+    "topic": "",
+    "qos": "",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt_broker_tb_cloud",
+    "x": 950,
+    "y": 400,
+    "wires": []
+  },
+  {
+    "id": "status_tb",
+    "type": "status",
+    "z": "7d2eb93b29f9d001",
+    "name": "Estado MQTT cloud",
+    "scope": [
+      "mqtt_out_tb"
+    ],
+    "x": 180,
+    "y": 500,
+    "wires": [
+      [
+        "fn_tb_status"
+      ]
+    ]
+  },
+  {
+    "id": "fn_tb_status",
+    "type": "function",
+    "z": "7d2eb93b29f9d001",
+    "name": "Set cloud status",
+    "func": "const txt = ((msg.status && msg.status.text) || \"\").toLowerCase();\nconst connected = txt.includes(\"connected\");\nglobal.set(\"tb_cloud_connected\", connected);\nconst queue = flow.get(\"tb_queue\") || [];\nmsg.payload = connected ? `Cloud ONLINE - cola: ${queue.length}` : `Cloud OFFLINE - cola: ${queue.length}`;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "x": 420,
+    "y": 500,
+    "wires": [
+      [
+        "ui_text_cloud"
+      ]
+    ]
+  },
+  {
+    "id": "ui_text_cloud",
+    "type": "ui_text",
+    "z": "7d2eb93b29f9d001",
+    "group": "ui_group_main",
+    "order": 6,
+    "width": "12",
+    "height": "1",
+    "name": "Estado nube",
+    "label": "Estado sync cloud",
+    "format": "{{msg.payload}}",
+    "layout": "row-spread",
+    "className": "",
+    "x": 690,
+    "y": 500,
+    "wires": []
+  },
+  {
+    "id": "inject_flush_queue",
+    "type": "inject",
+    "z": "7d2eb93b29f9d001",
+    "name": "Flush cada 15s",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "15",
+    "crontab": "",
+    "once": true,
+    "onceDelay": "5",
+    "topic": "",
+    "payload": "",
+    "payloadType": "date",
+    "x": 170,
+    "y": 580,
+    "wires": [
+      [
+        "fn_flush_queue"
+      ]
+    ]
+  },
+  {
+    "id": "fn_flush_queue",
+    "type": "function",
+    "z": "7d2eb93b29f9d001",
+    "name": "Flush cola",
+    "func": "if (global.get(\"tb_cloud_connected\") !== true) return null;\nconst queue = flow.get(\"tb_queue\") || [];\nif (!queue.length) return null;\n\nconst batch = queue.splice(0, 50);\nflow.set(\"tb_queue\", queue);\n\nconst out = batch.map(item => ({\n  topic: item.topic,\n  payload: item.payload,\n  qos: 1,\n  retain: false\n}));\n\nreturn [out, { payload: `Cloud ONLINE - enviados ${batch.length}, pendientes ${queue.length}` }];",
+    "outputs": 2,
+    "noerr": 0,
+    "x": 390,
+    "y": 580,
+    "wires": [
+      [
+        "mqtt_out_tb"
+      ],
+      [
+        "ui_text_cloud"
+      ]
+    ]
+  }
+]

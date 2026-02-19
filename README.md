@@ -21,6 +21,7 @@ Tambien se mantiene el compose monolitico para laboratorio local.
 - `docs/09-instalacion-azure-vm.md`
 - `docs/10-arquitectura-cloud-edge.md`
 - `docs/11-instalacion-edge.md`
+- `docs/12-validacion-offline-first.md`
 
 ## Modos de despliegue
 
@@ -75,7 +76,7 @@ sudo chmod 640 mosquitto/passwordfile
 
 5. Levantar edge:
 ```sh
-docker compose -f docker-compose.edge.yml up -d
+docker compose -f docker-compose.edge.yml up -d --build
 ```
 
 6. Ver estado:
@@ -117,8 +118,17 @@ Guia completa: `docs/09-instalacion-azure-vm.md`
 ## URLs
 
 - ThingsBoard (cloud): `http://<ip-cloud>:8080`
-- Node-RED (edge): `http://<ip-edge>:1880`
+- Node-RED editor (edge): `http://<ip-edge>:1880`
+- Node-RED dashboard local (edge): `http://<ip-edge>:1880/ui`
 - Zigbee2MQTT UI (edge): `http://<ip-edge>:8084`
+
+## Offline-first en edge
+
+- Flow recomendado para control local + cola cloud:
+  - `nodered/flows/offline-first-local-control.json`
+- Variables edge para dispositivos del dashboard:
+  - `EDGE_SWITCH_DEVICE`
+  - `EDGE_SENSOR_DEVICE`
 
 ## CI/CD
 

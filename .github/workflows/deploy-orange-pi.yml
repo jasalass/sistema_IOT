@@ -27,5 +27,5 @@ jobs:
       - name: Deploy stack
         run: |
           docker compose -f docker-compose.edge.yml pull
-          docker compose -f docker-compose.edge.yml up -d
+          docker compose -f docker-compose.edge.yml up -d --build
           docker compose -f docker-compose.edge.yml ps

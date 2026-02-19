@@ -23,6 +23,7 @@ Editar `.env`:
 - `MQTT_USER`, `MQTT_PASS`
 - `TB_CLOUD_HOST`, `TB_CLOUD_MQTT_PORT`, `TB_GATEWAY_TOKEN`
 - `ZIGBEE_ADAPTER_HOST`
+- `EDGE_SWITCH_DEVICE`, `EDGE_SENSOR_DEVICE`
 
 ## 2) Detectar adaptador Zigbee
 
@@ -58,7 +59,7 @@ sudo chmod 640 mosquitto/passwordfile
 ## 5) Levantar edge
 
 ```sh
-docker compose -f docker-compose.edge.yml up -d
+docker compose -f docker-compose.edge.yml up -d --build
 docker compose -f docker-compose.edge.yml ps
 ```
 
@@ -73,4 +74,20 @@ docker compose -f docker-compose.edge.yml logs -f nodered
 ## 7) URLs locales
 
 - Zigbee2MQTT: `http://<ip-edge>:8084`
-- Node-RED: `http://<ip-edge>:1880`
+- Node-RED editor: `http://<ip-edge>:1880`
+- Node-RED dashboard: `http://<ip-edge>:1880/ui`
+
+## 8) Importar flujo offline-first
+
+Archivo:
+
+- `nodered/flows/offline-first-local-control.json`
+
+Pasos:
+
+1. Abrir Node-RED editor (`http://<ip-edge>:1880`).
+2. `Menu -> Import`.
+3. Importar `nodered/flows/offline-first-local-control.json`.
+4. En el config node MQTT local, definir usuario/password de Mosquitto.
+5. En el config node MQTT cloud, definir usuario = token gateway ThingsBoard.
+6. `Deploy`.

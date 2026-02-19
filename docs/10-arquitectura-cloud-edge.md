@@ -9,7 +9,7 @@ Objetivo: centralizar visualizacion y gestion en la nube, manteniendo operacion 
 - Edge (por sitio):
   - `mosquitto`
   - `zigbee2mqtt` (si hay red Zigbee)
-  - `nodered`
+  - `nodered` (dashboard local `/ui` + automatizacion + puente cloud)
 
 ## Flujo recomendado
 

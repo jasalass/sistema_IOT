@@ -15,6 +15,8 @@ En modo cloud + edge:
 
 - Entrada Zigbee desde broker local edge (`mosquitto:1883`).
 - Salida a ThingsBoard cloud (`<TB_CLOUD_HOST>:<TB_CLOUD_MQTT_PORT>`).
+- Referencia lista para importar:
+  - `nodered/flows/offline-first-local-control.json`
 
 ### Flujo de telemetria
 
@@ -30,6 +32,14 @@ En modo cloud + edge:
 ### Cache de estado
 
 Guardar ultimo `state` por dispositivo en `flow context` (`z2m_state`) para responder RPC `getState`.
+
+### Cola local cuando cae internet
+
+Para tolerar caida WAN en edge:
+
+- Encolar telemetria en `flow context` cuando broker cloud este offline.
+- Reintentar flush periodico cuando el estado cloud vuelva a `connected`.
+- Mantener control de actuadores siempre por broker local (`mosquitto`).
 
 ## RPC ON/OFF (dashboard -> Zigbee)
 
